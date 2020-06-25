@@ -134,12 +134,6 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
   _freeeventtemplate_civix_civicrm_entityTypes($entityTypes);
 }
 
-/**
- * Implements hook_civicrm_thems().
- */
-function freeeventtemplate_civicrm_themes(&$themes) {
-  _freeeventtemplate_civix_civicrm_themes($themes);
-}
 
   function freeeventtemplate_civicrm_buildForm($formName, &$form) {
     if ($formName == "CRM_Event_Form_ManageEvent_EventInfo") {
@@ -150,11 +144,17 @@ function freeeventtemplate_civicrm_themes(&$themes) {
         ));
       }
     }
+  }
+
+  function freeeventtemplate_civicrm_buildAmount($pageType, &$form, &$amount) {
     if (get_class($form) == "CRM_Event_Form_Registration_Register") {
-      $templateId = "";
+      $templateId = civicrm_api3('Event', 'get', [
+        'id' => $form->_eventId,
+        'return.custom_' . TEMPLATE_ID => 1,
+      ])['values'][$form->_eventId]['custom_' . TEMPLATE_ID];
       if ($templateId) {
-        $template = getEventTemplates($templateId);
-        if (in_array($template, $zeroTemplates)) {
+        $isFree = _checkFreeEvent($templateId);
+        if ($isFree) {
           foreach ($amount as $key => &$val) {
             $val['is_display_amounts'] = 0;
             foreach ($val['options'] as $pid => &$pf) {
@@ -163,6 +163,41 @@ function freeeventtemplate_civicrm_themes(&$themes) {
           }
         }
       }
+    }
+    if (in_array(get_class($form), ["CRM_Event_Form_Participant", "CRM_Event_Form_ParticipantFeeSelection"]) && $pageType == 'event') {
+      $templateId = civicrm_api3('Event', 'get', [
+        'id' => $form->_eventId,
+        'return.custom_' . TEMPLATE_ID => 1,
+      ])['values'][$form->_eventId]['custom_' . TEMPLATE_ID];
+      if (empty($templateId)) {
+        return;
+      }
+      $isFree = _checkFreeEvent($templateId);
+      if (!in_array($templateId, [SLOZOOEVENT, SLOVAREVENT]) && $isFree && !empty($amount)) {
+        $form->assign('zeroPrice', TRUE);
+        foreach ($amount as $key => &$val) {
+          $val['is_display_amounts'] = 0;
+          foreach ($val['options'] as $pid => &$pf) {
+            $pf['amount'] = 0.00;
+          }
+        }
+      }
+    }
+  }
+
+  function _checkFreeEvent($templateId) {
+    $freeEvent = new CRM_Freeeventtemplate_DAO_FreeEvent();
+    $freeEvent->event_id = $templateId;
+    $freeEvent->find(TRUE);
+    if (!empty($freeEvent->free_event)) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  function freeeventtemplate_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+    if (($op == 'create' || $op == 'edit') && $objectName == 'Event') {
+      CRM_Core_Session::singleton()->set('eventID', $objectId);
     }
   }
 
