@@ -1,4 +1,7 @@
 <?php
+  define('TEMPLATE', 2);
+  define('SLOZOOTEMP', 1509);
+  define('SLOVARTEMP', 1510);
 
 require_once 'freeeventtemplate.civix.php';
 use CRM_Freeeventtemplate_ExtensionUtil as E;
@@ -144,13 +147,18 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
         ));
       }
     }
+    if ($formName == "CRM_Event_Form_Participant") {
+      CRM_Core_Region::instance('page-body')->add(array(
+        'template' => 'CRM/Price.tpl',
+      ));
+    }
   }
 
   function freeeventtemplate_civicrm_buildAmount($pageType, &$form, &$amount) {
     if (get_class($form) == "CRM_Event_Form_Registration_Register") {
       $templateId = civicrm_api3('Event', 'get', [
         'id' => $form->_eventId,
-        'return.custom_' . TEMPLATE_ID => 1,
+        'return.custom_' . TEMPLATE => 1,
       ])['values'][$form->_eventId]['custom_' . TEMPLATE_ID];
       if ($templateId) {
         $isFree = _checkFreeEvent($templateId);
@@ -167,13 +175,13 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
     if (in_array(get_class($form), ["CRM_Event_Form_Participant", "CRM_Event_Form_ParticipantFeeSelection"]) && $pageType == 'event') {
       $templateId = civicrm_api3('Event', 'get', [
         'id' => $form->_eventId,
-        'return.custom_' . TEMPLATE_ID => 1,
+        'return.custom_' . TEMPLATE => 1,
       ])['values'][$form->_eventId]['custom_' . TEMPLATE_ID];
       if (empty($templateId)) {
         return;
       }
       $isFree = _checkFreeEvent($templateId);
-      if (!in_array($templateId, [SLOZOOEVENT, SLOVAREVENT]) && $isFree && !empty($amount)) {
+      if (!in_array($templateId, [SLOZOOTEMP, SLOVARTEMP]) && $isFree && !empty($amount)) {
         $form->assign('zeroPrice', TRUE);
         foreach ($amount as $key => &$val) {
           $val['is_display_amounts'] = 0;
@@ -195,18 +203,14 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
     return FALSE;
   }
 
-  function freeeventtemplate_civicrm_post($op, $objectName, $objectId, &$objectRef) {
-    if (($op == 'create' || $op == 'edit') && $objectName == 'Event') {
-      CRM_Core_Session::singleton()->set('eventID', $objectId);
-    }
-  }
-
   function freeeventtemplate_civicrm_postProcess($formName, &$form) {
-    if ($formName == "CRM_Event_Form_ManageEvent_EventInfo") {
+    if ($formName == "CRM_Event_Form_ManageEvent_EventInfo" && !empty($form->getVar('_isTemplate'))) {
       if (array_key_exists('free_event', $form->_submitValues)) {
-        $eventId = CRM_Core_Session::singleton()->get('eventID');
+        // Get the template ID since this is not present in $form.
+        $templateId = CRM_Core_DAO::singleValueQuery("SELECT id FROm civicrm_event WHERE template_title = %1",
+          [1 => [$form->_submitValues['template_title'], "String"]]);
         $freeEvent = new CRM_Freeeventtemplate_DAO_FreeEvent();
-        $freeEvent->event_id = $eventId;
+        $freeEvent->event_id = $templateId;
         $freeEvent->find(TRUE);
         $freeEvent->free_event = $form->_submitValues['free_event'];
         $freeEvent->save();
