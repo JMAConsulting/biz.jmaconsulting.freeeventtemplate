@@ -1,5 +1,5 @@
 <?php
-  define('TEMPLATE', 2);
+  define('TEMPLATE', 327);
   define('SLOZOOTEMP', 1509);
   define('SLOVARTEMP', 1510);
 
@@ -151,6 +151,19 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
       CRM_Core_Region::instance('page-body')->add(array(
         'template' => 'CRM/Price.tpl',
       ));
+    }
+    if (in_array($formName, ["CRM_Event_Form_Registration_Register", "CRM_Event_Form_ParticipantFeeSelection"])) {
+      $templateId = civicrm_api3('Event', 'get', [
+        'id' => $form->_eventId,
+        'return.custom_' . TEMPLATE_ID => 1,
+      ])['values'][$form->_eventId]['custom_' . TEMPLATE_ID];
+      if ($templateId) {
+        $isFree = _checkFreeEvent($templateId);
+        $form->assign('freeEvent', $isFree);
+        CRM_Core_Region::instance('page-body')->add(array(
+          'template' => 'CRM/EventTemplate.tpl',
+        ));
+      }
     }
   }
 
