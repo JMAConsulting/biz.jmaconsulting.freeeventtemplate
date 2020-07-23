@@ -145,6 +145,13 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
         CRM_Core_Region::instance('page-body')->add(array(
           'template' => 'CRM/FreeEvent.tpl',
         ));
+        $isFree = _checkFreeEvent($form->_id);
+        if ($isFree) {
+          $form->setDefaults(['free_event' => 1]);
+        }
+        else {
+          $form->setDefaults(['free_event' => 0]);
+        } 
       }
     }
     if ($formName == "CRM_Event_Form_Participant") {
@@ -220,7 +227,7 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
     if ($formName == "CRM_Event_Form_ManageEvent_EventInfo" && !empty($form->getVar('_isTemplate'))) {
       if (array_key_exists('free_event', $form->_submitValues)) {
         // Get the template ID since this is not present in $form.
-        $templateId = CRM_Core_DAO::singleValueQuery("SELECT id FROm civicrm_event WHERE template_title = %1",
+        $templateId = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_event WHERE template_title = %1",
           [1 => [$form->_submitValues['template_title'], "String"]]);
         $freeEvent = new CRM_Freeeventtemplate_DAO_FreeEvent();
         $freeEvent->event_id = $templateId;
