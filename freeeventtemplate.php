@@ -159,7 +159,7 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
         'template' => 'CRM/Price.tpl',
       ));
     }
-    if (in_array($formName, ["CRM_Event_Form_Registration_Register", "CRM_Event_Form_ParticipantFeeSelection"])) {
+    if (in_array($formName, ["CRM_Event_Form_ParticipantFeeSelection"])) {
       $templateId = civicrm_api3('Event', 'get', [
         'id' => $form->_eventId,
         'return.custom_' . TEMPLATE_ID => 1,
