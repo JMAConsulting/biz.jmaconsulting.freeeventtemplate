@@ -227,7 +227,7 @@ function freeeventtemplate_civicrm_entityTypes(&$entityTypes) {
     if ($formName == "CRM_Event_Form_ManageEvent_EventInfo" && !empty($form->getVar('_isTemplate'))) {
       if (array_key_exists('free_event', $form->_submitValues)) {
         // Get the template ID since this is not present in $form.
-        $templateId = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_event WHERE template_title = %1",
+        $templateId = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_event WHERE template_title = %1 AND is_template = 1",
           [1 => [$form->_submitValues['template_title'], "String"]]);
         $freeEvent = new CRM_Freeeventtemplate_DAO_FreeEvent();
         $freeEvent->event_id = $templateId;
